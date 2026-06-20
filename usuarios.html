@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Usuarios - Biblioteca</title>
+  <link rel="stylesheet" href="shared.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <nav class="navbar">
+    <a href="tela%20inicial.html" class="nav-brand"><i class="fa-solid fa-book"></i><span>Biblioteca</span></a>
+    <button class="nav-toggle" onclick="this.nextElementSibling.classList.toggle('open')">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <ul class="nav-links">
+      <a href="tela%20inicial.html"><i class="fa-solid fa-house"></i> Inicio</a>
+      <a href="livros.html"><i class="fa-solid fa-book-open"></i> Livros</a>
+      <a href="categorias.html"><i class="fa-solid fa-layer-group"></i> Categorias</a>
+      <a href="emprestimos.html"><i class="fa-solid fa-book-bookmark"></i> Catalogo</a>
+      <a href="usuarios.html" class="active"><i class="fa-solid fa-users"></i> Usuarios</a>
+      <a href="reservas.html"><i class="fa-solid fa-calendar-check"></i> Reservas</a>
+      <a href="atrasados.html"><i class="fa-solid fa-triangle-exclamation"></i> Atrasados</a>
+      <a href="configuracoes.html"><i class="fa-solid fa-gear"></i> Config</a>
+    </ul>
+    <div class="nav-right">
+      <span class="user-name" id="userName"></span>
+      <button class="btn-logout" onclick="sair()"><i class="fa-solid fa-right-from-bracket"></i></button>
+    </div>
+  </nav>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h1><i class="fa-solid fa-users"></i> Usuarios</h1>
+      <button class="btn btn-primary" onclick="abrirModal()"><i class="fa-solid fa-plus"></i> Novo Usuario</button>
+    </div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr><th>Nome</th><th>Matricula</th><th>Email</th><th>Livros c/ Emprestimo</th><th>Acoes</th></tr>
+        </thead>
+        <tbody id="usuariosTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalTitle">Novo Usuario</h2>
+        <button class="modal-close" onclick="fecharModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="usuarioId">
+        <div class="form-group">
+          <label>Nome</label>
+          <input class="form-control" id="nome" placeholder="Nome completo">
+        </div>
+        <div class="form-group">
+          <label>Matricula</label>
+          <input class="form-control" id="matricula" placeholder="Numero da matricula">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input class="form-control" id="email" type="email" placeholder="email@exemplo.com">
+        </div>
+        <div class="form-group">
+          <label>Senha <small style="color:#999;font-weight:normal;">(deixe em branco para manter ao editar)</small></label>
+          <input class="form-control" id="senha" type="password" placeholder="Senha">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="fecharModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarUsuario()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const usuario = JSON.parse(sessionStorage.getItem('usuario') || '{}');
+    if (usuario.nome) document.getElementById('userName').textContent = usuario.nome;
+    function sair() { sessionStorage.clear(); window.location.href = 'bibliotecaa.html'; }
+
+    let editandoId = null;
+
+    async function carregarUsuarios() {
+      try {
+        const r = await fetch('/api/usuarios');
+        if (!r.ok) throw Error();
+        const usuarios = await r.json();
+        const tbody = document.getElementById('usuariosTable');
+        tbody.innerHTML = usuarios.map(u => `
+          <tr>
+            <td><strong>${u.nome}</strong></td>
+            <td>${u.matricula}</td>
+            <td>${u.email || '-'}</td>
+            <td><span class="badge ${u.livros_emprestados > 0 ? 'badge-emprestado' : 'badge-disponivel'}">${u.livros_emprestados} livro(s)</span></td>
+            <td class="actions">
+              <button class="btn btn-sm btn-warning" onclick="editarUsuario(${u.id})"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn btn-sm btn-danger" onclick="deletarUsuario(${u.id})"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `).join('');
+        if (!usuarios.length) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#999;">Nenhum usuario cadastrado</td></tr>';
+      } catch(e) {
+        document.getElementById('usuariosTable').innerHTML = '<tr><td colspan="5" style="text-align:center;color:#e63946;padding:30px;">Erro ao carregar</td></tr>';
+      }
+    }
+
+    function abrirModal(u) {
+      editandoId = u ? u.id : null;
+      document.getElementById('modalTitle').textContent = u ? 'Editar Usuario' : 'Novo Usuario';
+      document.getElementById('usuarioId').value = u ? u.id : '';
+      document.getElementById('nome').value = u ? u.nome : '';
+      document.getElementById('matricula').value = u ? u.matricula : '';
+      document.getElementById('email').value = u ? (u.email || '') : '';
+      document.getElementById('senha').value = '';
+      document.getElementById('modalOverlay').classList.add('active');
+    }
+
+    function fecharModal() {
+      document.getElementById('modalOverlay').classList.remove('active');
+      editandoId = null;
+    }
+
+    async function salvarUsuario() {
+      const data = {
+        nome: document.getElementById('nome').value.trim(),
+        matricula: document.getElementById('matricula').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        senha: document.getElementById('senha').value
+      };
+      if (!data.nome || !data.matricula) { alert('Preencha nome e matricula'); return; }
+
+      try {
+        const url = editandoId ? '/api/usuarios/'+editandoId : '/api/usuarios';
+        const method = editandoId ? 'PUT' : 'POST';
+        const r = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+        const res = await r.json();
+        if (res.success) { fecharModal(); carregarUsuarios(); }
+        else alert(res.message);
+      } catch(e) { alert('Erro ao salvar'); }
+    }
+
+    async function editarUsuario(id) {
+      try {
+        const r = await fetch('/api/usuarios');
+        const usuarios = await r.json();
+        const u = usuarios.find(x => x.id === id);
+        if (u) abrirModal(u);
+      } catch(e) { alert('Erro ao carregar'); }
+    }
+
+    async function deletarUsuario(id) {
+      if (!confirm('Excluir este usuario?')) return;
+      try {
+        const r = await fetch('/api/usuarios/'+id, { method:'DELETE' });
+        const res = await r.json();
+        if (res.success) carregarUsuarios();
+        else alert(res.message);
+      } catch(e) { alert('Erro ao excluir'); }
+    }
+
+    carregarUsuarios();
+  </script>
+</body>
+</html>

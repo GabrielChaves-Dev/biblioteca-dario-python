@@ -1,0 +1,102 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap');
+
+body{
+margin: 0%;
+font-family: 'Noto Sans', sans-serif;
+}
+.main-login{
+    width: 100vw;
+    height: 100vh;
+    background: #f7f5fc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+
+}
+.leftlogin {
+width: 50vw;
+height: 100vh;
+display: flex;
+justify-content: center;
+align-items: center;
+flex-direction: column;
+
+}
+.leftlogin > h1 {
+ color: #9370db;
+}
+
+.rightlogin{
+width: 50vw;
+height: 100vh;
+display: flex;
+justify-content: center;
+align-items: center;
+
+}
+
+.card-login{
+width: 550px;
+display: flex;
+justify-content: center;
+align-items: center;
+flex-direction: column;
+padding: 30px 35px;
+background-color: rgba(203, 49, 241, 0.533) ;
+border-radius:  20px;
+box-shadow: 0px 10px 50px #00000056;
+;}
+
+.card-login > h1 {
+    color: #9370db:
+    font-weight: 800;9
+    margin: 0;
+
+}
+
+.textfield{
+    width: 100%;
+    display:flex;
+    flex-direction: column; 
+    align-items: flex-start;
+    margin: 10px;
+
+
+  }
+
+  .textfield > input{
+width: 100%;
+border: none;
+border-radius: 10px;
+padding: 15px;
+background: #9945aa;
+color: rgb(8, 8, 8);
+box-shadow: 0px 10px 50px #00000056;
+  }
+.textfield > label{
+    color: rgb(27, 23, 23);
+    margin-bottom: 10px;
+}
+.textfield > input::placeholder{
+color:rgb(194, 194, 164);
+
+}
+
+.btn-login{
+width: 100px;
+padding: 16px 0px;
+margin: 25px;
+border: none;
+border-radius: 8px;
+outline: none;
+text-transform: uppercase;
+font-weight: 800;
+letter-spacing: 3px;
+color: #201b2c;
+background: #9370db;
+cursor: pointer;
+box-shadow: 0px 10px  40px -12px #00ff8052;
+}
+

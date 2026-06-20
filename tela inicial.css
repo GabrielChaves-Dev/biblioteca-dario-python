@@ -1,0 +1,128 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, sans-serif;
+}
+
+body{
+    background:#f7f5ff;
+    padding:20px;
+}
+
+header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:25px;
+}
+
+.logo{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    color:#7b2cbf;
+}
+
+.logo i{
+    font-size:28px;
+}
+
+.perfil{
+    width:45px;
+    height:45px;
+    background:#ffffff;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#7b2cbf;
+    box-shadow:0 3px 10px rgba(0,0,0,0.1);
+}
+
+.pesquisa{
+    margin-bottom:25px;
+}
+
+.pesquisa input{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:15px;
+    background:white;
+    font-size:15px;
+    box-shadow:0 2px 10px rgba(0,0,0,.08);
+}
+
+.titulo{
+    margin-bottom:20px;
+}
+
+.titulo h2{
+    color:#5a189a;
+}
+
+.titulo p{
+    color:#666;
+    margin-top:5px;
+}
+
+.cards{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:15px;
+}
+
+.card{
+    text-decoration:none;
+    color:white;
+    border-radius:22px;
+    padding:25px 20px;
+    min-height:150px;
+
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+
+    transition:.3s;
+}
+
+.card:hover{
+    transform:translateY(-5px);
+}
+
+.card i{
+    font-size:30px;
+}
+
+.card h3{
+    font-size:20px;
+}
+
+.card span{
+    font-size:14px;
+}
+
+.livros{
+    background:#7b2cbf;
+}
+
+.categorias{
+    background:#9d4edd;
+}
+
+.emprestimos{
+    background:#5a189a;
+}
+
+.usuarios{
+    background:#c77dff;
+}
+
+.reservas{
+    background:#a06cd5;
+}
+
+.atrasados{
+    background:#6d28d9;
+}

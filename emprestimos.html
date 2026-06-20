@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catalogo - Biblioteca</title>
+  <link rel="stylesheet" href="shared.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .book-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    .book-card {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,.08);
+      text-align: center;
+      transition: .3s;
+    }
+    .book-card:hover { transform: translateY(-4px); }
+    .book-card .status-bar {
+      color: white;
+      font-weight: bold;
+      padding: 10px;
+      font-size: 13px;
+    }
+    .book-card .status-bar.disponivel { background: #7b2cbf; }
+    .book-card .status-bar.emprestado { background: #e63946; }
+    .book-card .status-bar.reservado { background: #9d4edd; }
+    .book-card img {
+      width: 120px;
+      height: 170px;
+      object-fit: cover;
+      margin: 15px auto 0;
+      display: block;
+      border-radius: 8px;
+    }
+    .book-card h3 { color: #333; font-size: 15px; margin: 12px 10px 4px; }
+    .book-card p { color: #777; font-size: 13px; margin-bottom: 15px; }
+    .book-card .acoes { padding: 0 12px 15px; }
+    .book-card .acoes button {
+      width: 100%;
+      border: none;
+      background: #7b2cbf;
+      color: white;
+      padding: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: .2s;
+    }
+    .book-card .acoes button:hover { background: #5a189a; }
+    .book-card .acoes button.btn-outline-card {
+      background: transparent;
+      border: 2px solid #7b2cbf;
+      color: #7b2cbf;
+      margin-top: 5px;
+    }
+    .book-card .acoes button.btn-outline-card:hover { background: #f3edff; }
+    @media (max-width: 480px) {
+      .book-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <a href="tela%20inicial.html" class="nav-brand"><i class="fa-solid fa-book"></i><span>Biblioteca</span></a>
+    <button class="nav-toggle" onclick="this.nextElementSibling.classList.toggle('open')">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <ul class="nav-links">
+      <a href="tela%20inicial.html"><i class="fa-solid fa-house"></i> Inicio</a>
+      <a href="livros.html"><i class="fa-solid fa-book-open"></i> Livros</a>
+      <a href="categorias.html"><i class="fa-solid fa-layer-group"></i> Categorias</a>
+      <a href="emprestimos.html" class="active"><i class="fa-solid fa-book-bookmark"></i> Catalogo</a>
+      <a href="usuarios.html"><i class="fa-solid fa-users"></i> Usuarios</a>
+      <a href="reservas.html"><i class="fa-solid fa-calendar-check"></i> Reservas</a>
+      <a href="atrasados.html"><i class="fa-solid fa-triangle-exclamation"></i> Atrasados</a>
+      <a href="configuracoes.html"><i class="fa-solid fa-gear"></i> Config</a>
+    </ul>
+    <div class="nav-right">
+      <span class="user-name" id="userName"></span>
+      <button class="btn-logout" onclick="sair()"><i class="fa-solid fa-right-from-bracket"></i></button>
+    </div>
+  </nav>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h1>Catalogo de Livros</h1>
+      <input type="text" class="search-box" id="searchInput" placeholder="Buscar...">
+    </div>
+    <div class="book-grid" id="livrosContainer">
+      <p style="color:#999;grid-column:1/-1;text-align:center;padding:40px;">Carregando...</p>
+    </div>
+  </div>
+
+  <script>
+    const usuario = JSON.parse(sessionStorage.getItem('usuario') || '{}');
+    if (usuario.nome) document.getElementById('userName').textContent = usuario.nome;
+    function sair() { sessionStorage.clear(); window.location.href = 'bibliotecaa.html'; }
+
+    async function carregarLivros(q) {
+      const url = q ? '/api/livros/buscar?q='+encodeURIComponent(q) : '/api/livros';
+      try {
+        const r = await fetch(url);
+        if (!r.ok) throw Error();
+        const livros = await r.json();
+        const container = document.getElementById('livrosContainer');
+        container.innerHTML = livros.map(l => {
+          const imgSrc = (l.imagem && (l.imagem.startsWith('http') || l.imagem.startsWith('data:'))) ? l.imagem : (l.imagem || 'livros.svg');
+          let botoes = '';
+          if (l.status === 'disponivel') {
+            botoes = `<button class="btn-acao emprestar" data-id="${l.id}">Emprestar</button>
+                      <button class="btn-acao reservar" data-id="${l.id}">Reservar</button>`;
+          } else if (l.status === 'emprestado') {
+            botoes = `<button class="btn-acao devolver" data-id="${l.id}">Devolver</button>`;
+          } else {
+            botoes = `<button class="btn-acao" disabled style="opacity:.5;cursor:default;">Reservado</button>`;
+          }
+          return `<div class="book-card" data-id="${l.id}">
+            <div class="status-bar ${l.status}">${l.status.charAt(0).toUpperCase()+l.status.slice(1)}</div>
+            <img src="${imgSrc}" alt="${l.titulo}" onerror="this.src='livros.svg'">
+            <h3>${l.titulo}</h3>
+            <p>${l.autor}</p>
+            <div class="acoes">${botoes}</div>
+          </div>`;
+        }).join('');
+        if (!livros.length) container.innerHTML = '<p style="color:#999;grid-column:1/-1;text-align:center;padding:40px;">Nenhum livro encontrado</p>';
+
+        document.querySelectorAll('.btn-acao.emprestar, .btn-acao.devolver, .btn-acao.reservar').forEach(b => b.addEventListener('click', handleAcao));
+      } catch(e) {
+        document.getElementById('livrosContainer').innerHTML = '<p style="color:#e63946;grid-column:1/-1;text-align:center;padding:40px;">Erro ao carregar</p>';
+      }
+    }
+
+    async function handleAcao(e) {
+      const btn = e.target;
+      const card = btn.closest('.book-card');
+      const id = btn.dataset.id;
+      const statusBar = card.querySelector('.status-bar');
+      const acoesDiv = card.querySelector('.acoes');
+
+      if (btn.classList.contains('emprestar')) {
+        if (!usuario.id) { alert('Faca login primeiro!'); window.location.href='bibliotecaa.html'; return; }
+        try {
+          const r = await fetch('/api/emprestar', { method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({livro_id:parseInt(id), usuario_id:usuario.id}) });
+          const d = await r.json();
+          if (d.success) {
+            statusBar.textContent = 'Emprestado'; statusBar.className = 'status-bar emprestado';
+            acoesDiv.innerHTML = '<button class="btn-acao devolver" data-id="'+id+'">Devolver</button>';
+            acoesDiv.querySelector('button').addEventListener('click', handleAcao);
+            alert(d.message);
+          } else alert(d.message);
+        } catch(e) { alert('Erro'); }
+      } else if (btn.classList.contains('devolver')) {
+        try {
+          const r = await fetch('/api/devolver', { method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({livro_id:parseInt(id)}) });
+          const d = await r.json();
+          if (d.success) {
+            statusBar.textContent = 'Disponivel'; statusBar.className = 'status-bar disponivel';
+            acoesDiv.innerHTML = '<button class="btn-acao emprestar" data-id="'+id+'">Emprestar</button><button class="btn-acao reservar" data-id="'+id+'">Reservar</button>';
+            acoesDiv.querySelectorAll('button').forEach(b => b.addEventListener('click', handleAcao));
+            alert(d.message);
+          } else alert(d.message);
+        } catch(e) { alert('Erro'); }
+      } else if (btn.classList.contains('reservar')) {
+        if (!usuario.id) { alert('Faca login primeiro!'); window.location.href='bibliotecaa.html'; return; }
+        try {
+          const r = await fetch('/api/reservar', { method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({livro_id:parseInt(id), usuario_id:usuario.id}) });
+          const d = await r.json();
+          if (d.success) {
+            statusBar.textContent = 'Reservado'; statusBar.className = 'status-bar reservado';
+            acoesDiv.innerHTML = '<button class="btn-acao" disabled style="opacity:.5;cursor:default;">Reservado</button>';
+            alert(d.message);
+          } else alert(d.message);
+        } catch(e) { alert('Erro'); }
+      }
+    }
+
+    document.getElementById('searchInput').addEventListener('input', e => carregarLivros(e.target.value.trim()));
+    carregarLivros();
+  </script>
+</body>
+</html>

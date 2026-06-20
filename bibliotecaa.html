@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="biblioteca.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <title>Biblioteca - Login</title>
+  <style>
+    .main-login {
+      width: 100vw;
+      height: 100vh;
+      background: #f7f5fc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .leftlogin {
+      width: 50vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    .leftlogin > h1 { color: #9370db; font-size: 2.2vw; text-align: center; }
+    .leftlogin img { width: 30vw; max-width: 400px; }
+    .rightlogin {
+      width: 50vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .card-login {
+      width: 85%;
+      max-width: 450px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      padding: 40px 35px;
+      background: rgba(203,49,241,0.25);
+      border-radius: 20px;
+      box-shadow: 0px 10px 40px #00000030;
+    }
+    .card-login > h1 { color: #5a189a; font-weight: 800; margin: 0 0 15px; }
+    .textfield {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      margin: 8px 0;
+    }
+    .textfield > label { color: #333; margin-bottom: 6px; font-weight: 600; font-size: 14px; }
+    .textfield > input {
+      width: 100%;
+      border: none;
+      border-radius: 10px;
+      padding: 14px 16px;
+      background: white;
+      color: #333;
+      font-size: 15px;
+      box-shadow: 0px 4px 15px rgba(0,0,0,.06);
+    }
+    .textfield > input::placeholder { color: #bbb; }
+    .btn-login {
+      width: 100%;
+      padding: 16px;
+      margin: 20px 0 0;
+      border: none;
+      border-radius: 10px;
+      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: 3px;
+      color: white;
+      background: #7b2cbf;
+      cursor: pointer;
+      font-size: 15px;
+      transition: .3s;
+    }
+    .btn-login:hover { background: #5a189a; transform: translateY(-2px); }
+    .error-msg { color: #e63946; font-size: 13px; margin-top: 10px; display: none; }
+    .test-users { width: 100%; margin-top: 15px; }
+    .test-users p { font-size: 12px; color: #888; margin-bottom: 8px; text-align: center; }
+    .test-btns { display: flex; gap: 8px; }
+    .test-btns button {
+      flex: 1; padding: 10px; border: 2px solid #7b2cbf; border-radius: 10px;
+      background: transparent; color: #7b2cbf; cursor: pointer; font-size: 12px;
+      font-weight: bold; transition: .2s;
+    }
+    .test-btns button:hover { background: #7b2cbf; color: white; }
+    @media (max-width: 768px) {
+      .main-login { flex-direction: column; height: auto; min-height: 100vh; padding: 20px; gap: 30px; }
+      .leftlogin { width: 100%; height: auto; padding-top: 30px; }
+      .leftlogin > h1 { font-size: 20px; }
+      .leftlogin img { width: 50vw; }
+      .rightlogin { width: 100%; height: auto; }
+      .card-login { padding: 30px 25px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="main-login">
+    <div class="leftlogin">
+      <h1>Faca seu login!<br>aproveite a leitura</h1>
+      <img src="livros.svg" alt="books">
+    </div>
+    <div class="rightlogin">
+      <div class="card-login">
+        <h1>LOGIN</h1>
+        <div class="textfield">
+          <label for="matricula">Matricula</label>
+          <input type="text" name="matricula" placeholder="digite sua matricula" id="matriculaInput">
+        </div>
+        <div class="textfield">
+          <label for="senha">Senha</label>
+          <input type="password" name="senha" placeholder="digite sua senha" id="senhaInput">
+        </div>
+        <button class="btn-login" onclick="login()">Entrar</button>
+        <div class="error-msg" id="errorMsg"></div>
+        <div class="test-users">
+          <p>--- Login rapido (prototipo) ---</p>
+          <div class="test-btns">
+            <button onclick="loginRapido('admin','admin123')">Admin</button>
+            <button onclick="loginRapido('larissa','1235')">Larissa</button>
+            <button onclick="loginRapido('2024001','senha123')">Joao</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    async function loginReq(matricula, senha) {
+      const errorEl = document.getElementById('errorMsg');
+      errorEl.style.display = 'none';
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ matricula, senha })
+        });
+        const data = await res.json();
+        if (data.success) {
+          sessionStorage.setItem('usuario', JSON.stringify(data.user));
+          window.location.href = 'tela%20inicial.html';
+        } else {
+          errorEl.textContent = data.message;
+          errorEl.style.display = 'block';
+        }
+      } catch (err) {
+        errorEl.textContent = 'Erro ao conectar com o servidor';
+        errorEl.style.display = 'block';
+      }
+    }
+    function login() {
+      loginReq(document.getElementById('matriculaInput').value, document.getElementById('senhaInput').value);
+    }
+    function loginRapido(m, s) {
+      document.getElementById('matriculaInput').value = m;
+      document.getElementById('senhaInput').value = s;
+      loginReq(m, s);
+    }
+    document.getElementById('senhaInput').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+  </script>
+</body>
+</html>

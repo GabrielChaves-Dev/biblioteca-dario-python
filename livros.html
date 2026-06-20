@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Livros - Biblioteca</title>
+  <link rel="stylesheet" href="shared.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <nav class="navbar">
+    <a href="tela%20inicial.html" class="nav-brand"><i class="fa-solid fa-book"></i><span>Biblioteca</span></a>
+    <button class="nav-toggle" onclick="this.nextElementSibling.classList.toggle('open')">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <ul class="nav-links">
+      <a href="tela%20inicial.html"><i class="fa-solid fa-house"></i> Inicio</a>
+      <a href="livros.html" class="active"><i class="fa-solid fa-book-open"></i> Livros</a>
+      <a href="categorias.html"><i class="fa-solid fa-layer-group"></i> Categorias</a>
+      <a href="emprestimos.html"><i class="fa-solid fa-book-bookmark"></i> Catalogo</a>
+      <a href="usuarios.html"><i class="fa-solid fa-users"></i> Usuarios</a>
+      <a href="reservas.html"><i class="fa-solid fa-calendar-check"></i> Reservas</a>
+      <a href="atrasados.html"><i class="fa-solid fa-triangle-exclamation"></i> Atrasados</a>
+      <a href="configuracoes.html"><i class="fa-solid fa-gear"></i> Config</a>
+    </ul>
+    <div class="nav-right">
+      <span class="user-name" id="userName"></span>
+      <button class="btn-logout" onclick="sair()"><i class="fa-solid fa-right-from-bracket"></i></button>
+    </div>
+  </nav>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h1><i class="fa-solid fa-book-open"></i> Livros</h1>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <input type="text" class="search-box" id="searchInput" placeholder="Buscar livro..." style="min-width:180px;">
+        <button class="btn btn-primary" onclick="abrirModal()"><i class="fa-solid fa-plus"></i> Novo Livro</button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Titulo</th>
+            <th>Autor</th>
+            <th>Categoria</th>
+            <th>Status</th>
+            <th>Acoes</th>
+          </tr>
+        </thead>
+        <tbody id="livrosTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MODAL -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalTitle">Novo Livro</h2>
+        <button class="modal-close" onclick="fecharModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="livroId">
+        <div class="form-group">
+          <label>Titulo</label>
+          <input class="form-control" id="titulo" placeholder="Titulo do livro">
+        </div>
+        <div class="form-group">
+          <label>Autor</label>
+          <input class="form-control" id="autor" placeholder="Nome do autor">
+        </div>
+        <div class="form-group">
+          <label>ISBN</label>
+          <input class="form-control" id="isbn" placeholder="ISBN">
+        </div>
+        <div class="form-group">
+          <label>Categoria</label>
+          <select class="form-control" id="categoria_id"></select>
+        </div>
+        <div class="form-group">
+          <label>URL da Imagem (opcional)</label>
+          <input class="form-control" id="imagem" placeholder="Deixe em branco para usar padrao">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="fecharModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarLivro()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const usuario = JSON.parse(sessionStorage.getItem('usuario') || '{}');
+    if (usuario.nome) document.getElementById('userName').textContent = usuario.nome;
+    function sair() { sessionStorage.clear(); window.location.href = 'bibliotecaa.html'; }
+
+    let editandoId = null;
+
+    async function carregarLivros(q) {
+      const url = q ? '/api/livros/buscar?q='+encodeURIComponent(q) : '/api/livros';
+      try {
+        const r = await fetch(url);
+        if (!r.ok) throw Error();
+        const livros = await r.json();
+        const tbody = document.getElementById('livrosTable');
+        tbody.innerHTML = livros.map(l => `
+          <tr>
+            <td><strong>${l.titulo}</strong></td>
+            <td>${l.autor}</td>
+            <td>${l.categoria || '-'}</td>
+            <td><span class="badge badge-${l.status}">${l.status.charAt(0).toUpperCase()+l.status.slice(1)}</span></td>
+            <td class="actions">
+              <button class="btn btn-sm btn-warning" onclick="editarLivro(${l.id})"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn btn-sm btn-danger" onclick="deletarLivro(${l.id})"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `).join('');
+        if (!livros.length) tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Nenhum livro encontrado</td></tr>';
+      } catch(e) {
+        document.getElementById('livrosTable').innerHTML = '<tr><td colspan="5" style="text-align:center;color:#e63946;padding:30px;">Erro ao carregar livros</td></tr>';
+      }
+    }
+
+    async function carregarCategoriasSelect() {
+      try {
+        const r = await fetch('/api/categorias');
+        const cats = await r.json();
+        const sel = document.getElementById('categoria_id');
+        sel.innerHTML = '<option value="">Selecione...</option>' + cats.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+      } catch(e) {}
+    }
+
+    function abrirModal(livro) {
+      editandoId = livro ? livro.id : null;
+      document.getElementById('modalTitle').textContent = livro ? 'Editar Livro' : 'Novo Livro';
+      document.getElementById('livroId').value = livro ? livro.id : '';
+      document.getElementById('titulo').value = livro ? livro.titulo : '';
+      document.getElementById('autor').value = livro ? livro.autor : '';
+      document.getElementById('isbn').value = livro ? (livro.isbn || '') : '';
+      document.getElementById('categoria_id').value = livro ? (livro.categoria_id || '') : '';
+      document.getElementById('imagem').value = livro ? (livro.imagem || '') : '';
+      document.getElementById('modalOverlay').classList.add('active');
+    }
+
+    function fecharModal() {
+      document.getElementById('modalOverlay').classList.remove('active');
+      editandoId = null;
+    }
+
+    async function salvarLivro() {
+      const data = {
+        titulo: document.getElementById('titulo').value.trim(),
+        autor: document.getElementById('autor').value.trim(),
+        isbn: document.getElementById('isbn').value.trim(),
+        categoria_id: document.getElementById('categoria_id').value || null,
+        imagem: document.getElementById('imagem').value.trim() || 'livros.svg'
+      };
+      if (!data.titulo || !data.autor) { alert('Preencha titulo e autor'); return; }
+
+      try {
+        const url = editandoId ? '/api/livros/'+editandoId : '/api/livros';
+        const method = editandoId ? 'PUT' : 'POST';
+        const r = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+        const res = await r.json();
+        if (res.success) { fecharModal(); carregarLivros(); }
+        else alert(res.message);
+      } catch(e) { alert('Erro ao salvar'); }
+    }
+
+    async function editarLivro(id) {
+      try {
+        const r = await fetch('/api/livros/'+id);
+        const livro = await r.json();
+        abrirModal(livro);
+      } catch(e) { alert('Erro ao carregar livro'); }
+    }
+
+    async function deletarLivro(id) {
+      if (!confirm('Excluir este livro?')) return;
+      try {
+        const r = await fetch('/api/livros/'+id, { method:'DELETE' });
+        const res = await r.json();
+        if (res.success) carregarLivros();
+        else alert(res.message);
+      } catch(e) { alert('Erro ao excluir'); }
+    }
+
+    document.getElementById('searchInput').addEventListener('input', e => carregarLivros(e.target.value.trim()));
+    carregarLivros();
+    carregarCategoriasSelect();
+  </script>
+</body>
+</html>

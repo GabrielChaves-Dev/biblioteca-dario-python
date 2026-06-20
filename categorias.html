@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Categorias - Biblioteca</title>
+  <link rel="stylesheet" href="shared.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <nav class="navbar">
+    <a href="tela%20inicial.html" class="nav-brand"><i class="fa-solid fa-book"></i><span>Biblioteca</span></a>
+    <button class="nav-toggle" onclick="this.nextElementSibling.classList.toggle('open')">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <ul class="nav-links">
+      <a href="tela%20inicial.html"><i class="fa-solid fa-house"></i> Inicio</a>
+      <a href="livros.html"><i class="fa-solid fa-book-open"></i> Livros</a>
+      <a href="categorias.html" class="active"><i class="fa-solid fa-layer-group"></i> Categorias</a>
+      <a href="emprestimos.html"><i class="fa-solid fa-book-bookmark"></i> Catalogo</a>
+      <a href="usuarios.html"><i class="fa-solid fa-users"></i> Usuarios</a>
+      <a href="reservas.html"><i class="fa-solid fa-calendar-check"></i> Reservas</a>
+      <a href="atrasados.html"><i class="fa-solid fa-triangle-exclamation"></i> Atrasados</a>
+      <a href="configuracoes.html"><i class="fa-solid fa-gear"></i> Config</a>
+    </ul>
+    <div class="nav-right">
+      <span class="user-name" id="userName"></span>
+      <button class="btn-logout" onclick="sair()"><i class="fa-solid fa-right-from-bracket"></i></button>
+    </div>
+  </nav>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h1><i class="fa-solid fa-layer-group"></i> Categorias</h1>
+      <button class="btn btn-primary" onclick="abrirModal()"><i class="fa-solid fa-plus"></i> Nova Categoria</button>
+    </div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr><th>Nome</th><th>Descricao</th><th>Total Livros</th><th>Acoes</th></tr>
+        </thead>
+        <tbody id="categoriasTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalTitle">Nova Categoria</h2>
+        <button class="modal-close" onclick="fecharModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="categoriaId">
+        <div class="form-group">
+          <label>Nome</label>
+          <input class="form-control" id="nome" placeholder="Nome da categoria">
+        </div>
+        <div class="form-group">
+          <label>Descricao</label>
+          <input class="form-control" id="descricao" placeholder="Descricao da categoria">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="fecharModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarCategoria()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const usuario = JSON.parse(sessionStorage.getItem('usuario') || '{}');
+    if (usuario.nome) document.getElementById('userName').textContent = usuario.nome;
+    function sair() { sessionStorage.clear(); window.location.href = 'bibliotecaa.html'; }
+
+    let editandoId = null;
+
+    async function carregarCategorias() {
+      try {
+        const r = await fetch('/api/categorias');
+        if (!r.ok) throw Error();
+        const cats = await r.json();
+        const tbody = document.getElementById('categoriasTable');
+        tbody.innerHTML = cats.map(c => `
+          <tr>
+            <td><strong>${c.nome}</strong></td>
+            <td>${c.descricao || '-'}</td>
+            <td><span class="badge badge-disponivel">${c.total_livros} livro(s)</span></td>
+            <td class="actions">
+              <button class="btn btn-sm btn-warning" onclick="editarCategoria(${c.id})"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn btn-sm btn-danger" onclick="deletarCategoria(${c.id})"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `).join('');
+        if (!cats.length) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#999;">Nenhuma categoria</td></tr>';
+      } catch(e) {
+        document.getElementById('categoriasTable').innerHTML = '<tr><td colspan="4" style="text-align:center;color:#e63946;padding:30px;">Erro ao carregar</td></tr>';
+      }
+    }
+
+    function abrirModal(c) {
+      editandoId = c ? c.id : null;
+      document.getElementById('modalTitle').textContent = c ? 'Editar Categoria' : 'Nova Categoria';
+      document.getElementById('categoriaId').value = c ? c.id : '';
+      document.getElementById('nome').value = c ? c.nome : '';
+      document.getElementById('descricao').value = c ? (c.descricao || '') : '';
+      document.getElementById('modalOverlay').classList.add('active');
+    }
+
+    function fecharModal() {
+      document.getElementById('modalOverlay').classList.remove('active');
+      editandoId = null;
+    }
+
+    async function salvarCategoria() {
+      const data = {
+        nome: document.getElementById('nome').value.trim(),
+        descricao: document.getElementById('descricao').value.trim()
+      };
+      if (!data.nome) { alert('Preencha o nome'); return; }
+      try {
+        const url = editandoId ? '/api/categorias/'+editandoId : '/api/categorias';
+        const method = editandoId ? 'PUT' : 'POST';
+        const r = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+        const res = await r.json();
+        if (res.success) { fecharModal(); carregarCategorias(); }
+        else alert(res.message);
+      } catch(e) { alert('Erro ao salvar'); }
+    }
+
+    async function editarCategoria(id) {
+      try {
+        const r = await fetch('/api/categorias');
+        const cats = await r.json();
+        const c = cats.find(x => x.id === id);
+        if (c) abrirModal(c);
+      } catch(e) { alert('Erro ao carregar'); }
+    }
+
+    async function deletarCategoria(id) {
+      if (!confirm('Excluir esta categoria?')) return;
+      try {
+        const r = await fetch('/api/categorias/'+id, { method:'DELETE' });
+        const res = await r.json();
+        if (res.success) carregarCategorias();
+        else alert(res.message);
+      } catch(e) { alert('Erro ao excluir'); }
+    }
+
+    carregarCategorias();
+  </script>
+</body>
+</html>
